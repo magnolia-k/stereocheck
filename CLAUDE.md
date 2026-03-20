@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**streocheck** is a macOS menu bar application written in Swift that monitors audio speaker channel configuration. It displays per-speaker settings in the menu bar and visually indicates (via icons) whether left/right channels are normal or swapped — eliminating the need to open Audio MIDI Setup manually.
+**StereoCheck** is a macOS menu bar application written in Swift that monitors audio speaker channel configuration. It displays per-speaker settings in the menu bar and visually indicates (via icons) whether left/right channels are normal or swapped — eliminating the need to open Audio MIDI Setup manually.
 
 - **Target platform**: macOS 26 Tahoe and later
 - **Language**: Swift
@@ -16,13 +16,13 @@ This project uses the native macOS Swift compiler (no external package managers)
 
 Once source files exist, build with:
 ```bash
-swiftc -o streocheck *.swift
+swiftc -o StereoCheck *.swift
 ```
 
 If an Xcode project is created:
 ```bash
-xcodebuild -scheme streocheck build
-xcodebuild -scheme streocheck test
+xcodebuild -scheme StereoCheck build
+xcodebuild -scheme StereoCheck test
 ```
 
 If Swift Package Manager is used:

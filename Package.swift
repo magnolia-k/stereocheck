@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "StreoCheck",
+    name: "StereoCheck",
     platforms: [.macOS(.v13)],
     targets: [
         .executableTarget(
-            name: "StreoCheck",
-            path: "Sources/StreoCheck"
+            name: "StereoCheck",
+            path: "Sources/StereoCheck"
         )
     ]
 )

@@ -1,4 +1,4 @@
-# StreoCheck
+# StereoCheck
 
 macOS のメニューバーに常駐し、オーディオ出力デバイスの左右チャンネル設定を確認・修正するアプリ。
 
@@ -26,8 +26,8 @@ xcode-select --install
 ### 2. リポジトリのクローン
 
 ```bash
-git clone git@github.com:magnolia-k/streocheck.git
-cd streocheck
+git clone git@github.com:magnolia-k/stereocheck.git
+cd stereocheck
 ```
 
 ### 3. ビルド＆起動
@@ -42,16 +42,16 @@ swift run
 
 ```bash
 swift build -c release
-sudo cp .build/release/StreoCheck /usr/local/bin/StreoCheck
-cp tech.magnolia.streocheck.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/tech.magnolia.streocheck.plist
+sudo cp .build/release/StereoCheck /usr/local/bin/StereoCheck
+cp tech.magnolia.stereocheck.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/tech.magnolia.stereocheck.plist
 ```
 
 ### 自動起動を解除する
 
 ```bash
-launchctl unload ~/Library/LaunchAgents/tech.magnolia.streocheck.plist
-rm ~/Library/LaunchAgents/tech.magnolia.streocheck.plist
+launchctl unload ~/Library/LaunchAgents/tech.magnolia.stereocheck.plist
+rm ~/Library/LaunchAgents/tech.magnolia.stereocheck.plist
 ```
 
 ## 使い方
@@ -65,4 +65,4 @@ rm ~/Library/LaunchAgents/tech.magnolia.streocheck.plist
 
 ## 終了
 
-メニューの「StreoCheck を終了」または ⌘Q。
+メニューの「StereoCheck を終了」または ⌘Q。

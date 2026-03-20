@@ -17,7 +17,7 @@ struct MenuView: View {
 
             Divider()
 
-            Button("StreoCheck を終了") { NSApplication.shared.terminate(nil) }
+            Button("StereoCheck を終了") { NSApplication.shared.terminate(nil) }
                 .keyboardShortcut("q")
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)

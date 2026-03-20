@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct StreoCheckApp: App {
+struct StereoCheckApp: App {
     @StateObject private var monitor = AudioMonitor()
 
     var body: some Scene {

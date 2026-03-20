@@ -4,10 +4,10 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>tech.magnolia.streocheck</string>
+    <string>tech.magnolia.stereocheck</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/local/bin/StreoCheck</string>
+        <string>/usr/local/bin/StereoCheck</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
