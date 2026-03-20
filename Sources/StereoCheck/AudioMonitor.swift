@@ -17,6 +17,7 @@ struct SpeakerInfo: Identifiable, Sendable {
 @MainActor
 final class AudioMonitor: ObservableObject {
     @Published private(set) var speakers: [SpeakerInfo] = []
+    @Published private(set) var defaultDeviceID: AudioDeviceID = 0
 
     var hasSwapped: Bool {
         speakers.contains { $0.isSwapped }
@@ -39,25 +40,44 @@ final class AudioMonitor: ObservableObject {
 
     func refresh() {
         speakers = fetchOutputDevices()
+        defaultDeviceID = fetchDefaultOutputDeviceID()
     }
 
     // MARK: - Private
 
     private func startMonitoring() {
+        let selectors: [AudioObjectPropertySelector] = [
+            kAudioHardwarePropertyDevices,
+            kAudioHardwarePropertyDefaultOutputDevice,
+        ]
+        for selector in selectors {
+            var address = AudioObjectPropertyAddress(
+                mSelector: selector,
+                mScope: kAudioObjectPropertyScopeGlobal,
+                mElement: kAudioObjectPropertyElementMain
+            )
+            AudioObjectAddPropertyListenerBlock(
+                AudioObjectID(kAudioObjectSystemObject),
+                &address,
+                DispatchQueue.main
+            ) { [weak self] _, _ in
+                Task { @MainActor [weak self] in
+                    self?.refresh()
+                }
+            }
+        }
+    }
+
+    private func fetchDefaultOutputDeviceID() -> AudioDeviceID {
         var address = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDevices,
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
             mScope: kAudioObjectPropertyScopeGlobal,
             mElement: kAudioObjectPropertyElementMain
         )
-        AudioObjectAddPropertyListenerBlock(
-            AudioObjectID(kAudioObjectSystemObject),
-            &address,
-            DispatchQueue.main
-        ) { [weak self] _, _ in
-            Task { @MainActor [weak self] in
-                self?.refresh()
-            }
-        }
+        var deviceID: AudioDeviceID = 0
+        var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+        AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &deviceID)
+        return deviceID
     }
 
     private func fetchOutputDevices() -> [SpeakerInfo] {
@@ -133,6 +153,19 @@ final class AudioMonitor: ObservableObject {
         var channels: [UInt32] = [speaker.rightChannel, speaker.leftChannel]
         let size = UInt32(MemoryLayout<UInt32>.size * 2)
         AudioObjectSetPropertyData(speaker.id, &address, 0, nil, size, &channels)
+        refresh()
+    }
+
+    /// 指定デバイスをデフォルト出力デバイスに設定する
+    func setDefaultDevice(_ speaker: SpeakerInfo) {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var deviceID = speaker.id
+        let size = UInt32(MemoryLayout<AudioDeviceID>.size)
+        AudioObjectSetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, size, &deviceID)
         refresh()
     }
 

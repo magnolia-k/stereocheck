@@ -31,6 +31,7 @@ struct MenuView: View {
 struct SpeakerRow: View {
     let speaker: SpeakerInfo
     @EnvironmentObject var monitor: AudioMonitor
+    @State private var isHovered = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -40,24 +41,41 @@ struct SpeakerRow: View {
                 Image(systemName: speaker.isSwapped
                     ? "exclamationmark.triangle.fill"
                     : "checkmark.circle.fill")
-                .foregroundStyle(speaker.isSwapped ? .orange : .green)
+                .foregroundStyle(isHovered ? .white : (speaker.isSwapped ? .orange : .green))
                 .font(.system(size: 16))
                 .frame(width: 20)
             }
             .buttonStyle(.plain)
             .help(speaker.isSwapped ? "クリックして元に戻す" : "クリックしてL/Rを入れ替える")
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(speaker.name)
-                    .fontWeight(.medium)
-                Text(speaker.channelLabel)
-                    .font(.caption)
-                    .foregroundStyle(speaker.isSwapped ? .orange : .secondary)
+            Button {
+                monitor.setDefaultDevice(speaker)
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 4) {
+                            Text(speaker.name)
+                                .fontWeight(.medium)
+                            if speaker.id == monitor.defaultDeviceID {
+                                Image(systemName: "speaker.wave.2.fill")
+                                    .font(.caption)
+                            }
+                        }
+                        Text(speaker.channelLabel)
+                            .font(.caption)
+                            .foregroundStyle(isHovered ? .white : (speaker.isSwapped ? .orange : .secondary))
+                    }
+                    Spacer()
+                }
             }
-
-            Spacer()
+            .buttonStyle(.plain)
+            .help("クリックして再生先に設定する")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
+        .background(isHovered ? Color(NSColor.selectedContentBackgroundColor) : Color.clear)
+        .foregroundStyle(isHovered ? Color.white : Color.primary)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .onHover { isHovered = $0 }
     }
 }
