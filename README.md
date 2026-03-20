@@ -54,6 +54,16 @@ launchctl unload ~/Library/LaunchAgents/tech.magnolia.stereocheck.plist
 rm ~/Library/LaunchAgents/tech.magnolia.stereocheck.plist
 ```
 
+## アンインストール
+
+自動起動を解除したうえで、バイナリを削除する。
+
+```bash
+launchctl unload ~/Library/LaunchAgents/tech.magnolia.stereocheck.plist
+rm ~/Library/LaunchAgents/tech.magnolia.stereocheck.plist
+sudo rm /usr/local/bin/StereoCheck
+```
+
 ## 使い方
 
 起動するとメニューバーにステレオスピーカーアイコンが表示される。
