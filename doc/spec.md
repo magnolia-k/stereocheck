@@ -60,9 +60,11 @@ Core Audio の `kAudioDevicePropertyPreferredChannelsForStereo` プロパティ�
 ## ビルド・実行
 
 ```bash
-swift build        # ビルド
-swift run          # ビルド＆起動
-pkill StereoCheck   # 終了
+swift build -c release  # リリースビルド
+swift run -c release    # リリースビルド＆起動
+swift build             # デバッグビルド（開発用）
+swift run               # デバッグビルド＆起動（開発用）
+pkill StereoCheck       # 終了
 ```
 
 ## 自動起動（LaunchAgent）
@@ -76,7 +78,7 @@ sudo cp .build/release/StereoCheck /usr/local/bin/StereoCheck
 
 # LaunchAgent を登録
 cp tech.magnolia.stereocheck.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/tech.magnolia.stereocheck.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/tech.magnolia.stereocheck.plist
 ```
 
 バイナリのパスは `tech.magnolia.stereocheck.plist` の `ProgramArguments` に記載（`/usr/local/bin/StereoCheck`）。

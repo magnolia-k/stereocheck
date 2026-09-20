@@ -7,7 +7,7 @@ Audio MIDI Setup を開かなくても、スピーカーの L/R が正常か入�
 ## 動作環境
 
 - macOS 26 Tahoe 以降
-- Swift Command Line Tools（Xcode 不要）
+- 対応するSwift Command Line ToolsまたはXcode
 
 ## インストール
 
@@ -33,8 +33,10 @@ cd stereocheck
 ### 3. ビルド＆起動
 
 ```bash
-swift run
+swift run -c release
 ```
+
+開発中にデバッグビルドを使用する場合は `swift run` を実行する。
 
 ## ログイン時に自動起動する
 
@@ -44,13 +46,13 @@ swift run
 swift build -c release
 sudo cp .build/release/StereoCheck /usr/local/bin/StereoCheck
 cp tech.magnolia.stereocheck.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/tech.magnolia.stereocheck.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/tech.magnolia.stereocheck.plist
 ```
 
 ### 自動起動を解除する
 
 ```bash
-launchctl unload ~/Library/LaunchAgents/tech.magnolia.stereocheck.plist
+launchctl bootout gui/$(id -u)/tech.magnolia.stereocheck
 rm ~/Library/LaunchAgents/tech.magnolia.stereocheck.plist
 ```
 
@@ -59,7 +61,7 @@ rm ~/Library/LaunchAgents/tech.magnolia.stereocheck.plist
 自動起動を解除したうえで、バイナリを削除する。
 
 ```bash
-launchctl unload ~/Library/LaunchAgents/tech.magnolia.stereocheck.plist
+launchctl bootout gui/$(id -u)/tech.magnolia.stereocheck
 rm ~/Library/LaunchAgents/tech.magnolia.stereocheck.plist
 sudo rm /usr/local/bin/StereoCheck
 ```
@@ -82,3 +84,9 @@ sudo rm /usr/local/bin/StereoCheck
 ## 終了
 
 メニューの「StereoCheck を終了」または ⌘Q。
+
+## トラブルシューティング
+
+Command Line Toolsの構成によって、存在しない検索パスに関するリンカー警告が表示される場合がある。ビルドが完了していれば、アプリの実行には影響しない。
+
+警告を解消するにはCommand Line Toolsを更新・再インストールするか、完全版Xcodeのツールチェーンを使用する。非推奨の `--build-system native` は使用しない。

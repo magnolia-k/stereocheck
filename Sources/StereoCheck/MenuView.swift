@@ -51,7 +51,6 @@ struct MenuView: View {
 struct SpeakerRow: View {
     let speaker: SpeakerInfo
     @EnvironmentObject var monitor: AudioMonitor
-    @State private var isHovered = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -61,7 +60,7 @@ struct SpeakerRow: View {
                 Image(systemName: speaker.isSwapped
                     ? "exclamationmark.triangle.fill"
                     : "checkmark.circle.fill")
-                .foregroundStyle(isHovered ? .white : (speaker.isSwapped ? .orange : .green))
+                .foregroundStyle(speaker.isSwapped ? .orange : .green)
                 .font(.system(size: 16))
                 .frame(width: 20)
             }
@@ -84,7 +83,7 @@ struct SpeakerRow: View {
                         }
                         Text(speaker.channelLabel)
                             .font(.caption)
-                            .foregroundStyle(isHovered ? .white : (speaker.isSwapped ? .orange : .secondary))
+                            .foregroundStyle(speaker.isSwapped ? .orange : .secondary)
                     }
                     Spacer()
                 }
@@ -94,10 +93,7 @@ struct SpeakerRow: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(isHovered ? Color(NSColor.selectedContentBackgroundColor) : Color.clear)
-        .foregroundStyle(isHovered ? Color.white : Color.primary)
         .clipShape(RoundedRectangle(cornerRadius: 6))
-        .onHover { isHovered = $0 }
     }
 
     private var channelButtonHelp: String {
