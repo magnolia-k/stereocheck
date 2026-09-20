@@ -15,6 +15,26 @@ struct MenuView: View {
                 }
             }
 
+            if let errorMessage = monitor.errorMessage {
+                Divider()
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text(errorMessage)
+                        .font(.caption)
+                    Spacer()
+                    Button {
+                        monitor.dismissError()
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .buttonStyle(.plain)
+                    .help("閉じる")
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+            }
+
             Divider()
 
             Button("StereoCheck を終了") { NSApplication.shared.terminate(nil) }
@@ -46,7 +66,8 @@ struct SpeakerRow: View {
                 .frame(width: 20)
             }
             .buttonStyle(.plain)
-            .help(speaker.isSwapped ? "クリックして元に戻す" : "クリックしてL/Rを入れ替える")
+            .disabled(!speaker.canSwapChannels)
+            .help(channelButtonHelp)
 
             Button {
                 monitor.setDefaultDevice(speaker)
@@ -77,5 +98,10 @@ struct SpeakerRow: View {
         .foregroundStyle(isHovered ? Color.white : Color.primary)
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .onHover { isHovered = $0 }
+    }
+
+    private var channelButtonHelp: String {
+        guard speaker.canSwapChannels else { return "このデバイスでは変更できません" }
+        return speaker.isSwapped ? "クリックして元に戻す" : "クリックしてL/Rを入れ替える"
     }
 }

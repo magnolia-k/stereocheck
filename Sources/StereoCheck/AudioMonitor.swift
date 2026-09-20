@@ -1,16 +1,25 @@
+import Combine
 import CoreAudio
 import Foundation
 
 struct SpeakerInfo: Identifiable, Sendable {
     let id: AudioDeviceID
     let name: String
-    let leftChannel: UInt32   // 物理チャンネル番号（Lに割り当て）
-    let rightChannel: UInt32  // 物理チャンネル番号（Rに割り当て）
+    let leftChannel: UInt32?   // 物理チャンネル番号（Lに割り当て）
+    let rightChannel: UInt32?  // 物理チャンネル番号（Rに割り当て）
 
-    var isSwapped: Bool { leftChannel > rightChannel }
+    var canSwapChannels: Bool { leftChannel != nil && rightChannel != nil }
+
+    var isSwapped: Bool {
+        guard let leftChannel, let rightChannel else { return false }
+        return leftChannel > rightChannel
+    }
 
     var channelLabel: String {
-        "L←Ch\(leftChannel)  R←Ch\(rightChannel)"
+        guard let leftChannel, let rightChannel else {
+            return "ステレオ設定を取得できません"
+        }
+        return "L←Ch\(leftChannel)  R←Ch\(rightChannel)"
     }
 }
 
@@ -18,6 +27,7 @@ struct SpeakerInfo: Identifiable, Sendable {
 final class AudioMonitor: ObservableObject {
     @Published private(set) var speakers: [SpeakerInfo] = []
     @Published private(set) var defaultDeviceID: AudioDeviceID = 0
+    @Published private(set) var errorMessage: String?
 
     var hasSwapped: Bool {
         speakers.contains { $0.isSwapped }
@@ -103,13 +113,20 @@ final class AudioMonitor: ObservableObject {
     }
 
     private func speakerInfo(for deviceID: AudioDeviceID) -> SpeakerInfo? {
-        guard hasOutputChannels(deviceID) else { return nil }
+        guard let outputChannelCount = outputChannelCount(deviceID), outputChannelCount > 0 else {
+            return nil
+        }
         let name = deviceName(deviceID) ?? "Unknown"
-        let (left, right) = preferredStereoChannels(deviceID)
-        return SpeakerInfo(id: deviceID, name: name, leftChannel: left, rightChannel: right)
+        let channels = outputChannelCount >= 2 ? preferredStereoChannels(deviceID) : nil
+        return SpeakerInfo(
+            id: deviceID,
+            name: name,
+            leftChannel: channels?.left,
+            rightChannel: channels?.right
+        )
     }
 
-    private func hasOutputChannels(_ deviceID: AudioDeviceID) -> Bool {
+    private func outputChannelCount(_ deviceID: AudioDeviceID) -> UInt32? {
         var address = AudioObjectPropertyAddress(
             mSelector: kAudioDevicePropertyStreamConfiguration,
             mScope: kAudioDevicePropertyScopeOutput,
@@ -117,15 +134,17 @@ final class AudioMonitor: ObservableObject {
         )
         var size: UInt32 = 0
         guard AudioObjectGetPropertyDataSize(deviceID, &address, 0, nil, &size) == noErr,
-              size >= UInt32(MemoryLayout<AudioBufferList>.size) else { return false }
+              size >= UInt32(MemoryLayout<AudioBufferList>.size) else { return nil }
 
         let ptr = UnsafeMutableRawPointer.allocate(
             byteCount: Int(size), alignment: MemoryLayout<AudioBufferList>.alignment)
         defer { ptr.deallocate() }
-        guard AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, ptr) == noErr else { return false }
+        guard AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, ptr) == noErr else { return nil }
 
-        let bufferList = ptr.bindMemory(to: AudioBufferList.self, capacity: 1).pointee
-        return bufferList.mNumberBuffers > 0
+        let bufferList = UnsafeMutableAudioBufferListPointer(
+            ptr.bindMemory(to: AudioBufferList.self, capacity: 1)
+        )
+        return bufferList.reduce(0) { $0 + $1.mNumberChannels }
     }
 
     private func deviceName(_ deviceID: AudioDeviceID) -> String? {
@@ -145,14 +164,28 @@ final class AudioMonitor: ObservableObject {
 
     /// 指定デバイスのL/Rチャンネル割り当てを入れ替える
     func swapChannels(for speaker: SpeakerInfo) {
+        guard let leftChannel = speaker.leftChannel,
+              let rightChannel = speaker.rightChannel else {
+            errorMessage = "\(speaker.name) はステレオチャンネル設定に対応していません。"
+            return
+        }
         var address = AudioObjectPropertyAddress(
             mSelector: kAudioDevicePropertyPreferredChannelsForStereo,
             mScope: kAudioDevicePropertyScopeOutput,
             mElement: kAudioObjectPropertyElementMain
         )
-        var channels: [UInt32] = [speaker.rightChannel, speaker.leftChannel]
+        guard isPropertySettable(speaker.id, address: &address) else {
+            errorMessage = "\(speaker.name) のチャンネル設定は変更できません。"
+            return
+        }
+        var channels: [UInt32] = [rightChannel, leftChannel]
         let size = UInt32(MemoryLayout<UInt32>.size * 2)
-        AudioObjectSetPropertyData(speaker.id, &address, 0, nil, size, &channels)
+        let status = AudioObjectSetPropertyData(speaker.id, &address, 0, nil, size, &channels)
+        guard status == noErr else {
+            errorMessage = "\(speaker.name) のチャンネル変更に失敗しました（OSStatus: \(status)）。"
+            return
+        }
+        errorMessage = nil
         refresh()
     }
 
@@ -165,14 +198,37 @@ final class AudioMonitor: ObservableObject {
         )
         var deviceID = speaker.id
         let size = UInt32(MemoryLayout<AudioDeviceID>.size)
-        AudioObjectSetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, size, &deviceID)
+        let systemObject = AudioObjectID(kAudioObjectSystemObject)
+        guard isPropertySettable(systemObject, address: &address) else {
+            errorMessage = "再生先を変更できません。"
+            return
+        }
+        let status = AudioObjectSetPropertyData(systemObject, &address, 0, nil, size, &deviceID)
+        guard status == noErr else {
+            errorMessage = "再生先の変更に失敗しました（OSStatus: \(status)）。"
+            return
+        }
+        errorMessage = nil
         refresh()
+    }
+
+    func dismissError() {
+        errorMessage = nil
+    }
+
+    private func isPropertySettable(
+        _ objectID: AudioObjectID,
+        address: inout AudioObjectPropertyAddress
+    ) -> Bool {
+        var isSettable: DarwinBoolean = false
+        return AudioObjectIsPropertySettable(objectID, &address, &isSettable) == noErr
+            && isSettable.boolValue
     }
 
     /// Audio MIDI Setupの「チャンネルを使用」に相当。
     /// 戻り値: (Lに割り当てられたチャンネル番号, Rに割り当てられたチャンネル番号)
     /// 正常: (1, 2)、入れ替わり: (2, 1) のような組み合わせ
-    private func preferredStereoChannels(_ deviceID: AudioDeviceID) -> (left: UInt32, right: UInt32) {
+    private func preferredStereoChannels(_ deviceID: AudioDeviceID) -> (left: UInt32, right: UInt32)? {
         var address = AudioObjectPropertyAddress(
             mSelector: kAudioDevicePropertyPreferredChannelsForStereo,
             mScope: kAudioDevicePropertyScopeOutput,
@@ -181,7 +237,7 @@ final class AudioMonitor: ObservableObject {
         var channels = [UInt32](repeating: 0, count: 2)
         var size = UInt32(MemoryLayout<UInt32>.size * 2)
         guard AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &channels) == noErr else {
-            return (1, 2) // 取得できない場合は正常とみなす
+            return nil
         }
         return (channels[0], channels[1])
     }

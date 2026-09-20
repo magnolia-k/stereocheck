@@ -54,7 +54,8 @@ Core Audio の `kAudioDevicePropertyPreferredChannelsForStereo` プロパティ�
 - 正常: left < right（例: Ch1=L, Ch2=R）
 - 入れ替わり: left > right（例: Ch2=L, Ch1=R）
 
-プロパティが取得できないデバイスは正常とみなす。
+プロパティが取得できないデバイスは、ステレオ設定を取得できない旨を表示し、入れ替え操作を無効にする。
+設定変更に失敗した場合はポップオーバー内にエラーを表示する。
 
 ## ビルド・実行
 
