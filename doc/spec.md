@@ -90,4 +90,7 @@ Sources/StereoCheck/
 ├── StereoCheckApp.swift   # @main エントリポイント、MenuBarExtra 定義
 ├── AudioMonitor.swift    # Core Audio 監視・チャンネル操作ロジック
 └── MenuView.swift        # ポップオーバー UI
+
+Tests/StereoCheckTests/
+└── SpeakerInfoTests.swift # チャンネル状態表示・判定のテスト
 ```
